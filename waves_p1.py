@@ -8,7 +8,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.integrate import solve_ivp
 
-nr_neurons = 10
+nr_neurons = 100
 delta1 = 1e-2
 sigma1 = 1e-2
 gsyn= 1.5
@@ -87,10 +87,8 @@ def evolve(t, y0):
 		#ts = t
 	if dv[ctr]>Vt and v[ctr]<Vt:
 		s[ctr] = s[ctr]+ delta2
-	if s[ctr]>1:
-		s[ctr]=1
+	s[np.nonzero(s>1)] =1
 	ds = -s/tau2
-	plt.plot(ds)
 	#ds = (1/(1+np.exp(-5000*(v-0.02))) - s)/0.01
 	temp1 = np.concatenate((dv,dh),axis=0)
 	temp2 = np.concatenate((dm,dn,ds),axis=0)
