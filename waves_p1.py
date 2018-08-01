@@ -85,10 +85,13 @@ def evolve(t, y0):
 	dn = (mK2ss - n)/tau_k
 	#if v.any()>Vt:
 		#ts = t
-	if dv[ctr]>Vt and v[ctr]<Vt:
-		s[ctr] = s[ctr]+ delta2
+	#if dv[ctr]>Vt and v[ctr]<Vt:
+		#s[ctr] = s[ctr]+ delta2
+	#if dv.any()>Vt:
+	s[np.nonzero(dv>Vt)] = s[np.nonzero(dv>Vt)]+delta2
 	s[np.nonzero(s>1)] =1
 	ds = -s/tau2
+	plt.plot(t,ds[ctr],marker='.')
 	#ds = (1/(1+np.exp(-5000*(v-0.02))) - s)/0.01
 	temp1 = np.concatenate((dv,dh),axis=0)
 	temp2 = np.concatenate((dm,dn,ds),axis=0)
