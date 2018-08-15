@@ -97,8 +97,8 @@ def evolve(t, y0):
 	return f
 
 def Vt_cross_ctr(t,y0): return y0[ctr]-Vt
-#Vt_cross_ctr.terminal= True
-Vt_cross_ctr.terminal= False
+Vt_cross_ctr.terminal= True
+#Vt_cross_ctr.terminal= False
 Vt_cross_ctr.direction = 1
 
 #initial conditions
