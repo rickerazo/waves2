@@ -9,16 +9,16 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.integrate import solve_ivp
 
-nr_neurons = 120
+nr_neurons = 100
 delta1 = 1e-2
-sigma1 = 1e-2
+sigma1 = 2e-2
 #gsyn= 2
 domain = np.arange(0,nr_neurons)*delta1
 domain = np.array([domain])
-Vt = 0.026
-tau2 = 0.05
-tspan = [0,40]
-delta2 = 0.5
+Vt = -0.01
+tau2 = 0.001
+tspan = [0,400]
+delta2 = 0.2
 
 neuronSpace = np.arange(0,nr_neurons*delta1,delta1)
 
@@ -113,12 +113,11 @@ initconds[0,nr_neurons*2]= m2
 initconds[0,nr_neurons*3] = n2
 initconds[0,nr_neurons*4] = 1
 
+f=open('sim_out.dat','w')
 vrest=-0.042
 vrev_array = np.array((vrest-0.05,vrest-0.04,vrest-0.03,vrest-0.02,vrest-0.01,vrest+0.01,vrest+0.02,vrest+0.03,vrest+0.04,vrest+0.05))
 gsyn_array = np.arange(0.5,10,1)
-c_fast_array= np.zeros((np.size(gsyn_array)))
-plt.figure()
-for mj in range(2,np.size(vrev_array)):
+for mj in range(0,np.size(vrev_array)):
 	Vrev = vrev_array[mj]
 	for jj in range(0,np.size(gsyn_array)):
 		propagation=True #this is the default condition.
@@ -127,8 +126,7 @@ for mj in range(2,np.size(vrev_array)):
 		ts= np.zeros((1,nr_neurons))
 		ctr = 0
 		while ctr<nr_neurons:
-		#for ctr in range(0,nr_neurons):
-			neural_net = solve_ivp(evolve, tspan,initconds[0],method='RK45',events=Vt_cross_ctr,atol=1e-7,rtol=1e-5)
+			neural_net = solve_ivp(evolve, tspan,initconds[0],method='RK45',events=Vt_cross_ctr,atol=1e-8,rtol=1e-6)
 			if np.size(neural_net.t_events[0])>0:
 				spikes = neural_net.t_events[0]
 				ts[0,ctr] = spikes[0]
@@ -136,33 +134,12 @@ for mj in range(2,np.size(vrev_array)):
 				propagation=False
 				ctr=nr_neurons
 			ctr=ctr+1
-			#print(ctr,gsyn)
 
-		c = delta1/np.diff(ts[0])
-		a = np.diff(c)/np.diff(ts[0,0:-1])
+		np.save('Vrev'+str(int(Vrev*1000))+'_g'+str(int(gsyn*10))+'_ts',ts[0])
+		np.save('Vrev'+str(int(Vrev*1000))+'_g'+str(int(gsyn*10))+'_gsyn',gsyn)
+		np.save('Vrev'+str(int(Vrev*1000))+'_g'+str(int(gsyn*10))+'_Vrev',Vrev)
+		data_out = str(Vrev)+', '+str(gsyn)+', '+str(propagation)
+		f.write(data_out)
+		print(Vrev,gsyn,propagation)
 
-		if (propagation==False):
-			c_fast = 0
-		else:
-			c_fast = np.mean(c[np.nonzero(np.abs(a)<1e-4)])
-		#plt.ion()
-		limite_y=c_fast+0.01
-		plt.plot(delta1*np.arange(0,np.size(c),1),c,label='g='+str(gsyn))
-		plt.plot([0,delta1*np.size(c)],[c_fast,c_fast])
-		plt.ylim([0,limite_y])
-		#plt.title('Speed, gsyn='+str(gsyn))
-		#plt.ylabel('c')
-		#plt.xlabel('distance')
-		
-		milivolts = int(Vrev*1000)
-		filenm = 'Vrev'+str(milivolts)+'.npy'
-		c_fast_array[jj] = c_fast
-		print(gsyn,propagation)
-	print(mj)
-	np.save(filenm,c_fast_array)
-	plt.legend()
-	plt.title('Vrev='+str(Vrev))
-	plt.savefig('Vrev'+str(milivolts)+'.png')
-	plt.figure()
-np.save('gsyn.npy',gsyn_array)
-#plt.show()
+f.close()
