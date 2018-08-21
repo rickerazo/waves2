@@ -12,7 +12,7 @@ from scipy.integrate import solve_ivp
 #neurons shocked with inhibitory pulse. Primed to fire
 nr_shocked = 1
 #total number of neurons in network. Shocked included
-nr_neurons = 25
+nr_neurons = 20
 
 delta1 = 1e-2
 sigma1 = 2e-2
@@ -38,7 +38,7 @@ W = gsyn*J
 W1 = W[0,:]
 #Experimental parameters
 Htheta= 0.04134
-K2theta= -0.008
+#K2theta= -0.0075
 
 #Cell parameters
 gNa= 105
@@ -120,67 +120,69 @@ initconds[0,nr_neurons*2:nr_neurons*2+nr_shocked]= m2
 initconds[0,nr_neurons*3:nr_neurons*3+nr_shocked] = n2
 initconds[0,nr_neurons*4:nr_neurons*4+nr_shocked] = 0
 
+K2theta_list = np.array([-0.0060,-0.0065,-0.0070,-0.0075,-0.008,-0.0085,-0.0088])
+#K2theta_list = np.array([-0.0060,-0.0075,-0.0085,-0.0088])
 f= open('sim_out.dat','w')
-data_out = 'Vrev	gsyn	K2theta	Propagation'
+data_out = 'Vrev,	gsyn,	K2theta,	Propagation'
 f.write(data_out)
-f.write('\n')
-ts= np.zeros((1,nr_neurons))
-propagation = True
-ctr = 0
-while ctr < nr_neurons:
-#for ctr in range(0,nr_neurons):
-	neural_net = solve_ivp(evolve, tspan,initconds[0],method='RK45',events=Vt_cross_ctr,atol=1e-7,rtol=1e-5)
-	if np.size(neural_net.t_events[0])>0:
-		spikes = neural_net.t_events[0]
-		ts[0,ctr] = spikes[0]
-		print(ts[0,ctr])
-	else:
-		propagation = False
-		ctr = nr_neurons
-	ctr = ctr+1
-## plots 
-fgsz = 9
-#1 activation variable synaptic current
-plt.figure(figsize=(fgsz,fgsz))
-plt.ion()
-for i in range(0,nr_neurons):
-		plt.plot(neural_net.t,neural_net.y[i+nr_neurons*4,:]-0.5*i,label=str(i))
-plt.title('Activation variable of synaptic current. Vrev='+str(Vrev)+', gsyn='+str(gsyn)+', K2theta'+str(K2theta))
-plt.ylabel('s')
-plt.xlabel('time (s)')
-plt.legend()
-plt.savefig('s-Vrev'+str(Vrev)+'g'+str(gsyn)+'K2theta'+str(K2theta)+'.png')
+for K2 in range(0,np.size(K2theta_list)):
+	K2theta = K2theta_list[K2]
+	propagation = True
+	ctr = 0
+	ts= np.zeros((1,nr_neurons))
+	while ctr<nr_neurons:
+		neural_net = solve_ivp(evolve, tspan,initconds[0],method='RK45',events=Vt_cross_ctr,atol=1e-7,rtol=1e-5)
+		if np.size(neural_net.t_events[0])>0:
+			spikes = neural_net.t_events[0]
+			ts[0,ctr] = spikes[0]
+		else:
+			propagation = False
+			ctr = nr_neurons
+		ctr = ctr+1
 
-#2 v traces
-plt.figure(figsize=(fgsz,fgsz))
-plt.ion()
-for i in range(0,nr_neurons):
-		plt.plot(neural_net.t,neural_net.y[i,:]-0.05*i,label=str(i))
-plt.title('Voltage traces. Vrev='+str(Vrev)+', gsyn='+str(gsyn)+', K2theta'+str(K2theta))
-plt.ylabel('Membrane potential (mV)')
-plt.xlabel('time (s)')
-plt.legend()
-plt.savefig('v-Vrev'+str(Vrev)+'g'+str(gsyn)+'K2theta'+str(K2theta)+'.png')
+	## plots 
+	fgsz = 9
+	#1 activation variable synaptic current
+	plt.figure(figsize=(fgsz,fgsz))
+	#plt.ion()
+	for i in range(0,nr_neurons):
+			plt.plot(neural_net.t,neural_net.y[i+nr_neurons*4,:]-0.5*i,label=str(i))
+	plt.title('Activation variable of synaptic current. Vrev='+str(Vrev)+', gsyn='+str(gsyn)+', K2theta'+str(K2theta))
+	plt.ylabel('s activation')
+	plt.xlabel('time (s)')
+	plt.legend()
+	plt.savefig('s-Vrev'+str(Vrev)+'g'+str(gsyn)+'K2theta'+str(K2theta)+'.png')
 
-spike_times = ts[0,nr_shocked:nr_neurons]
-c = delta1/np.diff(spike_times)
-a = np.diff(c)/np.diff(spike_times[0:-1])
+	#2 v traces
+	plt.figure(figsize=(fgsz,fgsz))
+	#plt.ion()
+	for i in range(0,nr_neurons):
+			plt.plot(neural_net.t,neural_net.y[i,:]-0.05*i,label=str(i))
+	plt.title('Voltage traces. Vrev='+str(Vrev)+', gsyn='+str(gsyn)+', K2theta'+str(K2theta))
+	plt.ylabel('Membrane potential (mV) - 0.05x')
+	plt.xlabel('time (s)')
+	plt.legend()
+	plt.savefig('v-Vrev'+str(Vrev)+'g'+str(gsyn)+'K2theta'+str(K2theta)+'.png')
 
-#c_fast = np.mean(c[np.nonzero(np.abs(a)<1e-3)])
-#3 wave instant speed
-plt.figure(figsize=(fgsz,fgsz))
-plt.ion()
-plt.plot(delta1*np.arange(0,np.size(c),1),c)
-plt.title('Instant Speed. Vrev='+str(Vrev)+', gsyn='+str(gsyn)+', K2theta'+str(K2theta))
-plt.ylabel('c')
-plt.xlabel('distance')
-plt.legend()
-plt.savefig('c-Vrev'+str(Vrev)+'g'+str(gsyn)+'K2theta'+str(K2theta)+'.png')
-#plt.savefig('g'+str(gsyn))
+	spike_times = ts[0,nr_shocked:nr_neurons]
+	c = delta1/np.diff(spike_times)
+	a = np.diff(c)/np.diff(spike_times[0:-1])
 
-#plt.show()
-np.save('ts-Vrev'+str(Vrev)+'g'+str(gsyn)+'K2theta'+str(K2theta),spike_times)
-data_out = str(Vrev)+'	'+str(gsyn)+'		'+str(K2theta)+'	'+str(propagation)
-f.write(data_out)
-f.write('\n')
+	#c_fast = np.mean(c[np.nonzero(np.abs(a)<1e-3)])
+	#3 wave instant speed
+	plt.figure(figsize=(fgsz,fgsz))
+	#plt.ion()
+	plt.plot(delta1*np.arange(0,np.size(c),1),c)
+	plt.title('Instant Speed. Vrev='+str(Vrev)+', gsyn='+str(gsyn)+', K2theta'+str(K2theta))
+	plt.ylabel('c')
+	plt.xlabel('distance')
+	#plt.legend()
+	plt.savefig('c-Vrev'+str(Vrev)+'g'+str(gsyn)+'K2theta'+str(K2theta)+'.png')
+	#plt.savefig('g'+str(gsyn))
+
+	#plt.show()
+	np.save('ts-Vrev'+str(Vrev)+'g'+str(gsyn)+'K2theta'+str(K2theta),spike_times)
+	data_out = str(Vrev)+',	'+str(gsyn)+',	'+str(K2theta)+',	'+str(propagation) /n
+	f.write(data_out)
+	
 f.close()
